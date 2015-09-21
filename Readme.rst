@@ -16,6 +16,8 @@ reverse merge will be just a fast forward.
 
 Usage:
 
+.. code-block:: bash
+
     $ cd <AOSP_ROOT>
     $ source build/envsetup.sh
     $ lunch aosp_hammerhead-userdebug
