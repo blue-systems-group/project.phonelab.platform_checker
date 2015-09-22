@@ -218,7 +218,7 @@ def build_platform(rel_info):
   logger.info("Building platform.")
   os.chdir(args.aosp_root)
   utils.call('make clean', verbose=args.verbose)
-  utils.call('make -j %d' % (args.j), verbose=args.verbose)
+  utils.call('make -j %d dist' % (args.j), verbose=args.verbose)
 
 
 def cleanup(rel_info):
