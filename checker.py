@@ -194,12 +194,19 @@ def merge_branches(rel_info):
   if experiment_branch is None:
     raise Exception("No experiment branch found for experiment %s" % (args.exp))
 
+  # refer to remote branch instead of local branch in case
+  # the branch is not checked out yet for some projects
+  experiment_branch = args.remote + '/' + experiment_branch
+
+  # assign the experiment branch to rel_info right now.
+  # otherwise, cleanup will not fail because of
+  # undefined field.
+  rel_info.experiment_branch = experiment_branch
+
   os.chdir(args.aosp_root)
 
   logger.info("Merging %s into %s" % (experiment_branch, rel_info.test_branch))
   utils.repo_forall('git merge %s -m "merge"' % (experiment_branch), verbose=args.verbose)
-
-  rel_info.experiment_branch = experiment_branch
 
 
 @time_it
