@@ -84,6 +84,8 @@ See `here <http://blog.udinic.com/2014/06/04/aosp-part-2-build-variants/>`_ for
 documents on build variants.
 """
 
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
 
 def rand_string(len=64):
   """Return a random string of certain length.
@@ -221,6 +223,12 @@ def build_platform(rel_info):
   utils.call('make -j %d dist' % (args.j), verbose=args.verbose)
 
 
+@time_it
+def test_tag_doc(rel_info):
+  os.chdir(rel_info.aosp_root)
+  utils.call('python %s --out /dev/null' % (os.path.join(PROJECT_ROOT, 'tagdoc.py')))
+
+
 def cleanup(rel_info):
   """Delete test branch, switch back to experiment branch.
   """
@@ -241,6 +249,7 @@ def main():
     setup_test_branch(rel_info)
     merge_branches(rel_info)
     build_platform(rel_info)
+    test_tag_doc(rel_info)
   except:
     logger.exception("[FAILED] Please check your changes.")
   else:
