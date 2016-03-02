@@ -225,7 +225,7 @@ def build_platform(rel_info):
 
 @time_it
 def test_tag_doc(rel_info):
-  os.chdir(rel_info.aosp_root)
+  os.chdir(rel_info.args.aosp_root)
   utils.call('python %s --out /dev/null' % (os.path.join(PROJECT_ROOT, 'tagdoc.py')))
 
 
