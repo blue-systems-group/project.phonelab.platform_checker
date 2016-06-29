@@ -262,9 +262,9 @@ def main():
         build_platform(rel_info)
         test_tag_doc(rel_info)
     except:
-        logger.exception("[FAILED] Please check your changes. '\
-                         'You can not pass this checker unless your branch '\
-                         'can be merged without conflicts.")
+        logger.exception("[FAILED] Please check your changes. "\
+                         "You can not pass this checker unless your branch "\
+                         "can be merged without conflicts.")
         logger.info("Note: all repos are in test branch %s" % rel_info.test_branch)
     else:
         logger.info(
