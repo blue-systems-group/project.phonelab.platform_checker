@@ -33,6 +33,8 @@ Experiment branch pattern is
 more details.
 """
 
+LOGGING_BRANCH_PREFIX = 'logging'
+
 DEFAULT_ANDROID_BASE = '5.1.1_r3'
 """Default AOSP version that we forked from.
 
@@ -187,21 +189,25 @@ def merge_branches(rel_info):
     lines = subprocess.check_output('git branch -a', shell=True)
 
     experiment_branch = None
+    logging_branches = []
     for line in sorted(lines.split('\n')):
         line = line.strip()
-        if line.startswith('remotes/%s/%s/android-%s' % (args.remote,
-                                                         EXPERIMENT_BRANCH_PREFIX, args.aosp_base)):
-            experiment_branch = '/'.join(line.split('/')[2:])
-            if args.exp in experiment_branch:
-                break
+        b = '/'.join(line.split('/')[1:])
+        if line.startswith('remotes/%s/%s/android-%s' %
+                           (args.remote, LOGGING_BRANCH_PREFIX, args.aosp_base)):
+            logger.info("Find logging branch %s" % (b))
+            logging_branches.append(b)
+
+        if line.startswith('remotes/%s/%s/android-%s' %
+                           (args.remote,
+                            EXPERIMENT_BRANCH_PREFIX, args.aosp_base)):
+            if args.exp in b:
+                logger.info("Find experiment branch %s" % (b))
+                experiment_branch = b
 
     if experiment_branch is None:
         raise Exception(
             "No experiment branch found for experiment %s" % (args.exp))
-
-    # refer to remote branch instead of local branch in case
-    # the branch is not checked out yet for some projects
-    experiment_branch = args.remote + '/' + experiment_branch
 
     # assign the experiment branch to rel_info right now.
     # otherwise, cleanup will not fail because of
@@ -210,10 +216,12 @@ def merge_branches(rel_info):
 
     os.chdir(args.aosp_root)
 
-    logger.info("Merging %s into %s" %
-                (experiment_branch, rel_info.test_branch))
-    utils.repo_forall('git merge %s -m "merge"' %
-                      (experiment_branch), verbose=args.verbose)
+    logging_branches.append(experiment_branch)
+
+    for b in logging_branches:
+        logger.info("Merging %s into %s" % (b, rel_info.test_branch))
+        utils.repo_forall('git merge %s -m "merge"' %
+                        (b), verbose=args.verbose)
 
 
 @time_it
@@ -239,13 +247,8 @@ def cleanup(rel_info):
     """Delete test branch, switch back to experiment branch.
     """
     args = rel_info.args
-
     os.chdir(args.aosp_root)
 
-    utils.repo_forall('git checkout %s' %
-                      (rel_info.experiment_branch), verbose=args.verbose)
-    utils.repo_forall('git branch -D %s' %
-                      (rel_info.test_branch), verbose=args.verbose)
 
 
 @time_it
@@ -259,7 +262,10 @@ def main():
         build_platform(rel_info)
         test_tag_doc(rel_info)
     except:
-        logger.exception("[FAILED] Please check your changes.")
+        logger.exception("[FAILED] Please check your changes. '\
+                         'You can not pass this checker unless your branch '\
+                         'can be merged without conflicts.")
+        logger.info("Note: all repos are in test branch %s" % rel_info.test_branch)
     else:
         logger.info(
             "[PASS] Your changes can be successfully merged and build.")
