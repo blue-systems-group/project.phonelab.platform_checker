@@ -160,13 +160,12 @@ def setup_test_branch(rel_info):
     os.chdir(args.aosp_root)
 
     logger.info("Fetching latest PhoneLab develop branch: %s" % (args.dev))
-    utils.repo_forall('git fetch %s %s:%s' %
-                      (args.remote, args.dev, args.dev), verbose=args.verbose)
+    utils.repo_forall('git fetch %s' % (args.remote), verbose=args.verbose)
 
     branch = rand_string()
     logger.info("Creating temp branch %s" % (branch))
-    utils.repo_forall('git checkout -B %s %s' % (branch,
-                                                 args.dev), verbose=args.verbose)
+    utils.repo_forall('git checkout -B %s %s/%s' % (branch, args.remote, args.dev),
+                      verbose=args.verbose)
 
     rel_info.test_branch = branch
 
