@@ -112,8 +112,8 @@ def arg_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--exp', required=True, help="Experiment to merge, you"
-                        "should use your experiment code name, instead of the whole branch name.")
+    parser.add_argument('--exp', required=True, nargs='+', help="Experiment to merge, you"
+                        "should use your experiment code name, instead of the full branch name.")
 
     parser.add_argument('--aosp_root', default=DEFAULT_ROOT,
                         help="Root of AOSP tree.")
@@ -130,6 +130,8 @@ def arg_parser():
                         help="AOSP base release version code.")
     parser.add_argument('--dev', default=DEFAULT_DEVELOP_BRANCH,
                         help="Development branch.")
+
+    parser.add_argument('--merge_only', action='store_true', default=False)
 
     parser.add_argument('--verbose', action='store_true',
                         help="Verbose output.")
@@ -187,7 +189,7 @@ def merge_branches(rel_info):
     logger.debug("Parsing experiment branches.")
     lines = subprocess.check_output('git branch -a', shell=True)
 
-    experiment_branch = None
+    exp_branches = []
     logging_branches = []
     for line in sorted(lines.split('\n')):
         line = line.strip()
@@ -200,27 +202,34 @@ def merge_branches(rel_info):
         if line.startswith('remotes/%s/%s/android-%s' %
                            (args.remote,
                             EXPERIMENT_BRANCH_PREFIX, args.aosp_base)):
-            if args.exp in b:
+            if any([e in b for e in args.exp]):
                 logger.info("Find experiment branch %s" % (b))
-                experiment_branch = b
+                exp_branches.append(b)
 
-    if experiment_branch is None:
+    if len(exp_branches) == 0:
         raise Exception(
             "No experiment branch found for experiment %s" % (args.exp))
 
-    # assign the experiment branch to rel_info right now.
-    # otherwise, cleanup will not fail because of
-    # undefined field.
-    rel_info.experiment_branch = experiment_branch
-
     os.chdir(args.aosp_root)
 
-    logging_branches.append(experiment_branch)
-
+    logger.info("Merging logging branches...")
     for b in logging_branches:
-        logger.info("Merging %s into %s" % (b, rel_info.test_branch))
-        utils.repo_forall('git merge %s -m "merge"' %
-                        (b), verbose=args.verbose)
+        utils.repo_forall('git merge %s -m "merge"' % (b), verbose=args.verbose)
+
+    projs = utils.get_repo_projs(args.aosp_root)
+    for exp in exp_branches:
+        logger.info("Merging %s ..." % (exp_branches))
+
+        for proj in projs:
+            logger.info("Merging for repo %s" % (proj))
+            os.chdir(os.path.join(args.aosp_root, proj))
+            try:
+                utils.call('git merge %s -m "test merge"' % (exp), verbose=args.verbose)
+            except:
+                logger.error("Failed to merge %s in repo %s" % (exp, proj))
+                raise
+            finally:
+                os.chdir(os.path.join(args.aosp_root))
 
 
 @time_it
@@ -258,8 +267,14 @@ def main():
     try:
         setup_test_branch(rel_info)
         merge_branches(rel_info)
-        build_platform(rel_info)
         test_tag_doc(rel_info)
+
+        if rel_info.args.merge_only:
+            return
+
+        build_platform(rel_info)
+    except KeyboardInterrupt:
+        pass
     except:
         logger.exception("[FAILED] Please check your changes. "\
                          "You can not pass this checker unless your branch "\

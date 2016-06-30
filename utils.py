@@ -3,6 +3,7 @@ import subprocess
 import logging
 import hashlib
 import time
+import xml.etree.ElementTree as ET
 
 logging.basicConfig(format='[%(asctime)s] %(levelname)8s [%(filename)16s:%(lineno)4d] %(message)s', level=logging.DEBUG)
 logger = logging.getLogger('phonelab')
@@ -23,7 +24,7 @@ def call(cmd, verbose=False, dryrun=False):
 def repo_forall(cmd, verbose=False, dryrun=False):
   """Wrap of ``repo forall`` without output pager.
   """
-  call('GIT_PAGER= repo forall -epv -c %s' % (cmd), verbose, dryrun)
+  call('GIT_PAGER= repo forall -j 4 -epv -c %s' % (cmd), verbose, dryrun)
 
 
 def bump_version(ver):
@@ -74,4 +75,15 @@ def time_it(func):
         int(duration_sec / 60), int(duration_sec % 60)))
 
   return func_wrapper
+
+
+def get_repo_projs(aosp_root):
+    projs = []
+    for child in ET.parse(os.path.join(aosp_root, '.repo', 'manifests',\
+        'default.xml')).getroot():
+      if child.tag == 'project' and 'notdefault' not in child.attrib.get(\
+          'groups', ''):
+        projs.append(child.attrib['path'])
+
+    return projs
 
