@@ -218,7 +218,7 @@ def merge_branches(rel_info):
 
     projs = utils.get_repo_projs(args.aosp_root)
     for exp in exp_branches:
-        logger.info("Merging %s ..." % (exp_branches))
+        logger.info("Merging %s ..." % (exp))
 
         for proj in projs:
             logger.info("Merging for repo %s" % (proj))
