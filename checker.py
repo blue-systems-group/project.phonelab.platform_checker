@@ -221,7 +221,6 @@ def merge_branches(rel_info):
         logger.info("Merging %s ..." % (exp))
 
         for proj in projs:
-            logger.info("Merging for repo %s" % (proj))
             os.chdir(os.path.join(args.aosp_root, proj))
             try:
                 utils.call('git merge %s -m "test merge"' % (exp), verbose=args.verbose)
